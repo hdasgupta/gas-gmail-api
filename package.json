@@ -1,0 +1,20 @@
+{
+  "name": "gas-gmail-api",
+  "version": "1.0.0",
+  "description": "Google Apps Script POST API that sends Gmail with to, subject and HTML body",
+  "private": true,
+  "scripts": {
+    "login": "clasp login",
+    "create": "clasp create --type webapp --title \"Gmail Send API\" --rootDir src && node scripts/fix-clasp.js",
+    "push": "clasp push -f",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp push -f && clasp deploy --description \"Gmail Send API\"",
+    "redeploy": "clasp push -f && clasp deploy --deploymentId $DEPLOYMENT_ID --description \"Gmail Send API update\"",
+    "deployments": "clasp deployments",
+    "logs": "clasp logs"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}
