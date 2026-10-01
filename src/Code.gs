@@ -6,6 +6,13 @@
  *   "to": "someone@example.com",          // required, comma-separated for multiple
  *   "subject": "Hello",                   // required
  *   "htmlBody": "<h1>Hi</h1><p>Test</p>", // required
+ *   "attachments": [                       // optional
+ *     {
+ *       "filename": "report.pdf",
+ *       "mimeType": "application/pdf",
+ *       "content": "<base64-encoded-file-content>"
+ *     }
+ *   ],
  *   "apiKey": "your-secret"               // required only if API_KEY script property is set
  * }
  *
@@ -45,15 +52,53 @@ function doPost(e) {
       return respond_(false, 'Daily email quota exceeded. Remaining: ' + remaining);
     }
 
-    GmailApp.sendEmail(recipients.join(','), subject, stripHtml_(htmlBody), {
+    var options = {
       htmlBody: htmlBody
-    });
+    };
+    var attachments = buildAttachments_(payload.attachments);
+    if (attachments.length) {
+      options.attachments = attachments;
+    }
+
+    GmailApp.sendEmail(recipients.join(','), subject, stripHtml_(htmlBody), options);
 
     return respond_(true, 'Email sent successfully to ' + recipients.join(', '));
   } catch (err) {
     console.error(err);
     return respond_(false, 'Failed to send email: ' + (err && err.message ? err.message : err));
   }
+}
+
+/** Builds Gmail attachments from [{filename, mimeType, content}] objects. */
+function buildAttachments_(attachments) {
+  if (attachments == null) return [];
+  if (!Array.isArray(attachments)) {
+    throw new Error('attachments must be an array');
+  }
+
+  return attachments.map(function (attachment, index) {
+    if (!attachment || typeof attachment !== 'object') {
+      throw new Error('Attachment at index ' + index + ' must be an object');
+    }
+
+    var filename = (attachment.filename || '').toString().trim();
+    var content = (attachment.content || '').toString().trim();
+    var mimeType = (attachment.mimeType || 'application/octet-stream').toString().trim();
+
+    if (!filename) {
+      throw new Error('Attachment at index ' + index + ' is missing filename');
+    }
+    if (!content) {
+      throw new Error('Attachment at index ' + index + ' is missing base64 content');
+    }
+
+    try {
+      var bytes = Utilities.base64Decode(content);
+      return Utilities.newBlob(bytes, mimeType, filename);
+    } catch (err) {
+      throw new Error('Attachment at index ' + index + ' has invalid base64 content');
+    }
+  });
 }
 
 /** Health check for GET requests. */
